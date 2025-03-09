@@ -98,7 +98,6 @@ class TravelPlanCard extends StatelessWidget {
   }
 }
 
-
 class TravelPlanner extends StatefulWidget {
   @override
   _TravelPlannerState createState() => _TravelPlannerState();
@@ -121,6 +120,138 @@ class _TravelPlannerState extends State<TravelPlanner> {
       default:
         return 0;
     }
+  }
+
+  /*
+  * User can either create a new plan or edit existing plan
+  *
+  */
+  void _showPlanDialog({Plan? existingPlan}) {
+    String name = existingPlan?.name ?? '';
+    String description = existingPlan?.description ?? '';
+    DateTime selectedDate = existingPlan?.date ?? DateTime.now();
+    String selectedPriority = existingPlan?.priority ?? 'Low';
+
+    TextEditingController nameController =
+        TextEditingController(text: name);
+    TextEditingController descriptionController =
+        TextEditingController(text: description);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              // Create plan if no existing plan passed
+              // Otherwise, edit plan
+              title: Text(existingPlan == null ? 'Create Plan' : 'Edit Plan'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(labelText: 'Plan Name'),
+                      onChanged: (value) {
+                        name = value;
+                      },
+                    ),
+                    TextField(
+                      controller: descriptionController,
+                      decoration:
+                          InputDecoration(labelText: 'Description'),
+                      onChanged: (value) {
+                        description = value;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      child: Text("Select Date"),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date != null) {
+                          setStateDialog(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    // Dropdown to select priority 
+                    DropdownButton<String>(
+                      value: selectedPriority,
+                      items: <String>['Low', 'Medium', 'High']
+                          .map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        // Updates the selected priority value
+                        setStateDialog(() {
+                          selectedPriority = newValue!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                // Button to cancel
+                // CLoses without making changes
+                TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ElevatedButton(
+                  // If no existing plan, creates new plan
+                  // Adds plan to list
+                  // If existing plan, updates
+                  child: Text(existingPlan == null ? 'Create' : 'Update'),
+                  onPressed: () {
+                    if (existingPlan == null) {
+                      setState(() {
+                        plans.add(Plan(
+                          id: DateTime.now().toString(),
+                          name: nameController.text,
+                          description: descriptionController.text,
+                          date: selectedDate,
+                          priority: selectedPriority,
+                        ));
+                        // Sort plans from high to low priority
+                        plans.sort((a, b) =>
+                            _priorityValue(b.priority)
+                                .compareTo(_priorityValue(a.priority)));
+                      });
+                    } else {
+                      setState(() {
+                        existingPlan.name = nameController.text;
+                        existingPlan.description =
+                            descriptionController.text;
+                        existingPlan.date = selectedDate;
+                        existingPlan.priority = selectedPriority;
+                        plans.sort((a, b) =>
+                            _priorityValue(b.priority)
+                                .compareTo(_priorityValue(a.priority)));
+                      });
+                    }
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   /*
