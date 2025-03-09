@@ -9,11 +9,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Adoption & Travel Plans',
+      title: 'Travel Planner',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: PlanManagerScreen(),
+      home: TravelPlanner(),
     );
   }
 }
@@ -24,7 +24,7 @@ class Plan {
   String description;
   DateTime date;
   bool completed;
-  String priority; // e.g., 'Low', 'Medium', 'High'
+  String priority; // 'Low', 'Medium', 'High'
 
   Plan({
     required this.id,
@@ -37,20 +37,35 @@ class Plan {
 }
 
 
-class PlanManagerScreen extends StatefulWidget {
+class TravelPlanner extends StatefulWidget {
   @override
-  _PlanManagerScreenState createState() => _PlanManagerScreenState();
+  _TravelPlannerState createState() => _TravelPlannerState();
 }
 
-class _PlanManagerScreenState extends State<PlanManagerScreen> {
+class _TravelPlannerState extends State<TravelPlanner> {
   List<Plan> plans = [];
+
+  /*
+  * Converts priority to a numeric value
+  */
+  int _priorityValue(String priority) {
+    switch (priority) {
+      case 'High':
+        return 3;
+      case 'Medium':
+        return 2;
+      case 'Low':
+        return 1;
+      default:
+        return 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         
-        // the App.build method, and use it to set our appbar title.
         title: Text('Travel Plans'),
       ),
       body: Center(
