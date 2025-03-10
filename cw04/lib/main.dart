@@ -308,7 +308,6 @@ class _TravelPlannerState extends State<TravelPlanner> {
       ),
       body: Column(
         children: [
-          // Show a week from calendar
           SizedBox(
             height: 160,
             child: TableCalendar(
@@ -323,6 +322,52 @@ class _TravelPlannerState extends State<TravelPlanner> {
                   _selectedDay = selectedDay;
                 });
               },
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, date, _) {
+                  bool isSelected = isSameDay(date, _selectedDay);
+                  bool isToday = isSameDay(date, DateTime.now());
+                  BoxDecoration decoration;
+                  if (isSelected) {
+                    decoration = BoxDecoration(
+                      color: Colors.blueAccent,
+                      shape: BoxShape.circle,
+                    );
+                  } else if (isToday) {
+                    decoration = BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    );
+                  } else {
+                    decoration = BoxDecoration();
+                  }
+                  return DragTarget<Plan>(
+                    onWillAcceptWithDetails: (details) => true,
+                    onAcceptWithDetails: (details) {
+                      // Update the dropped plan's date or add
+                      setState(() {
+                        details.data.date = date;
+                        if (!plans.any((p) => p.id == details.data.id)) {
+                          plans.add(details.data);
+                          plans.sort((a, b) => _priorityValue(b.priority)
+                              .compareTo(_priorityValue(a.priority)));
+                        }
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Plan dropped on ${date.day}/${date.month}/${date.year}"),
+                        ),
+                      );
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      return Container(
+                        margin: const EdgeInsets.all(4),
+                        decoration: decoration,
+                        child: Center(child: Text('${date.day}')),
+                      );
+                    },
+                  );
+                },
+              ),
               calendarStyle: CalendarStyle(
                 selectedDecoration: BoxDecoration(
                   color: Colors.blueAccent,
@@ -346,10 +391,12 @@ class _TravelPlannerState extends State<TravelPlanner> {
               onAcceptWithDetails: (DragTargetDetails<Plan> details) {
                 final droppedPlan = details.data;
                 setState(() {
-                  plans.add(droppedPlan);
-                  plans.sort((a, b) =>
-                      _priorityValue(b.priority)
-                          .compareTo(_priorityValue(a.priority)));
+                  if (!plans.any((p) => p.id == droppedPlan.id)) {
+                    plans.add(droppedPlan);
+                    plans.sort((a, b) =>
+                        _priorityValue(b.priority)
+                            .compareTo(_priorityValue(a.priority)));
+                  }
                 });
               },
               builder: (context, candidateData, rejectedData) {
