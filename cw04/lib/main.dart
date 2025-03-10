@@ -296,27 +296,104 @@ class _TravelPlannerState extends State<TravelPlanner> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
-        title: Text('Travel Plans'),
+        title: Text("Travel Planner"),
       ),
-      body: Center(
-        
-        child: Column(         
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: Column(
+        children: [
+          // Calendar
+          TableCalendar(
+            firstDay: DateTime.utc(2000, 1, 1),
+            lastDay: DateTime.utc(2100, 12, 31),
+            focusedDay: DateTime.now(),
+            onDaySelected: (selectedDay, focusedDay) {
+              // Filters plans
+            },
+          ),
+          // Draggable template widget
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildDraggableTemplate(),
+          ),
+          Expanded(
+            child: DragTarget<Plan>(
+              onAcceptWithDetails: (DragTargetDetails<Plan> details) {
+                final droppedPlan = details.data;
+                setState(() {
+                  plans.add(droppedPlan);
+                  plans.sort((a, b) => _priorityValue(b.priority)
+                      .compareTo(_priorityValue(a.priority)));
+                });
+              },
+              builder: (context, candidateData, rejectedData) {
+                return ListView.builder(
+                  itemCount: plans.length,
+                  itemBuilder: (context, index) {
+                    final plan = plans[index];
+                    return Dismissible(
+                      key: Key(plan.id),
+                      background: Container(
+                        color: Colors.green,
+                        alignment: Alignment.centerLeft,
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Icon(Icons.check, color: Colors.white),
+                      ),
+                      secondaryBackground: Container(
+                        color: Colors.green,
+                        alignment: Alignment.centerRight,
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Icon(Icons.undo, color: Colors.white),
+                      ),
+                      // Change completion status
+                      onDismissed: (direction) {
+                        setState(() {
+                          plan.completed = !plan.completed;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(plan.completed
+                                ? 'Plan marked as completed'
+                                : 'Plan marked as pending'),
+                          ),
+                        );
+                      },
+                      // Displays plan details
+                      child: TravelPlanCard(
+                        plan: plan,
+                        onEdit: () => _showPlanDialog(existingPlan: plan),
+                        onDelete: () {
+                          setState(() {
+                            plans.removeAt(index);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Plan deleted')),
+                          );
+                        },
+                        onToggleComplete: () {
+                          setState(() {
+                            plan.completed = !plan.completed;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(plan.completed
+                                  ? 'Plan completed'
+                                  : 'Plan pending'),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+      // Button to create new plan
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), 
+        child: Icon(Icons.add),
+        onPressed: () => _showPlanDialog(),
+      ),
     );
   }
 }
