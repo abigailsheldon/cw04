@@ -64,8 +64,8 @@ class TravelPlanCard extends StatelessWidget {
       // Double-click allows user to delete plan
       onDoubleTap: onDelete,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: EdgeInsets.all(12),
+        margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: plan.completed
               ? Colors.grey[400]
@@ -74,18 +74,22 @@ class TravelPlanCard extends StatelessWidget {
                   : (plan.priority == 'Medium'
                       ? Colors.orange[200]
                       : Colors.green[200])),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
           title: Text(
             plan.name,
             style: TextStyle(
-                decoration: plan.completed
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none),
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              decoration: plan.completed
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
+            ),
           ),
           subtitle: Text(
             "${plan.description}\nDate: ${plan.date.toLocal().toString().split(' ')[0]}\nPriority: ${plan.priority}",
+            style: TextStyle(fontSize: 16),
           ),
           trailing: IconButton(
             icon: Icon(
@@ -107,6 +111,7 @@ class TravelPlanner extends StatefulWidget {
 
 class _TravelPlannerState extends State<TravelPlanner> {
   List<Plan> plans = [];
+  DateTime _selectedDay = DateTime.now();
 
   /*
   * Converts priority to a numeric value
@@ -126,12 +131,12 @@ class _TravelPlannerState extends State<TravelPlanner> {
 
   /*
   * User can either create a new plan or edit existing plan
-  *
   */
   void _showPlanDialog({Plan? existingPlan}) {
     String name = existingPlan?.name ?? '';
     String description = existingPlan?.description ?? '';
-    DateTime selectedDate = existingPlan?.date ?? DateTime.now();
+    // Use existing plan date or default to the currently selected day
+    DateTime selectedDate = existingPlan?.date ?? _selectedDay;
     String selectedPriority = existingPlan?.priority ?? 'Low';
 
     TextEditingController nameController =
@@ -290,98 +295,124 @@ class _TravelPlannerState extends State<TravelPlanner> {
     );
   }
 
-
   /*
   * Main build method
   */
   @override
   Widget build(BuildContext context) {
+    final allPlans = plans;
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Travel Planner"),
       ),
       body: Column(
         children: [
-          // Calendar
-          TableCalendar(
-            firstDay: DateTime.utc(2000, 1, 1),
-            lastDay: DateTime.utc(2100, 12, 31),
-            focusedDay: DateTime.now(),
-            onDaySelected: (selectedDay, focusedDay) {
-              // Filters plans
-            },
+          // Show a week from calendar
+          SizedBox(
+            height: 160,
+            child: TableCalendar(
+              calendarFormat: CalendarFormat.week,
+              rowHeight: 40,
+              firstDay: DateTime.utc(2000, 1, 1),
+              lastDay: DateTime.utc(2100, 12, 31),
+              focusedDay: _selectedDay,
+              selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                });
+              },
+              calendarStyle: CalendarStyle(
+                selectedDecoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  shape: BoxShape.circle,
+                ),
+                todayDecoration: BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
           // Draggable template widget
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: _buildDraggableTemplate(),
           ),
+          // Display list of plans
           Expanded(
             child: DragTarget<Plan>(
               onAcceptWithDetails: (DragTargetDetails<Plan> details) {
                 final droppedPlan = details.data;
                 setState(() {
                   plans.add(droppedPlan);
-                  plans.sort((a, b) => _priorityValue(b.priority)
-                      .compareTo(_priorityValue(a.priority)));
+                  plans.sort((a, b) =>
+                      _priorityValue(b.priority)
+                          .compareTo(_priorityValue(a.priority)));
                 });
               },
               builder: (context, candidateData, rejectedData) {
                 return ListView.builder(
-                  itemCount: plans.length,
+                  itemCount: allPlans.length,
                   itemBuilder: (context, index) {
-                    final plan = plans[index];
-                    return Dismissible(
-                      key: Key(plan.id),
-                      background: Container(
-                        color: Colors.green,
-                        alignment: Alignment.centerLeft,
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Icon(Icons.check, color: Colors.white),
-                      ),
-                      secondaryBackground: Container(
-                        color: Colors.green,
-                        alignment: Alignment.centerRight,
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Icon(Icons.undo, color: Colors.white),
-                      ),
-                      // Change completion status
-                      onDismissed: (direction) {
-                        setState(() {
-                          plan.completed = !plan.completed;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(plan.completed
-                                ? 'Plan marked as completed'
-                                : 'Plan marked as pending'),
+                    final plan = allPlans[index];
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 600),
+                        child: Dismissible(
+                          key: Key(plan.id),
+                          background: Container(
+                            color: Colors.green,
+                            alignment: Alignment.centerLeft,
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Icon(Icons.check, color: Colors.white),
                           ),
-                        );
-                      },
-                      // Displays plan details
-                      child: TravelPlanCard(
-                        plan: plan,
-                        onEdit: () => _showPlanDialog(existingPlan: plan),
-                        onDelete: () {
-                          setState(() {
-                            plans.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Plan deleted')),
-                          );
-                        },
-                        onToggleComplete: () {
-                          setState(() {
-                            plan.completed = !plan.completed;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(plan.completed
-                                  ? 'Plan completed'
-                                  : 'Plan pending'),
-                            ),
-                          );
-                        },
+                          secondaryBackground: Container(
+                            color: Colors.green,
+                            alignment: Alignment.centerRight,
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Icon(Icons.undo, color: Colors.white),
+                          ),
+                          // Change completion status
+                          onDismissed: (direction) {
+                            setState(() {
+                              plan.completed = !plan.completed;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(plan.completed
+                                    ? 'Plan completed'
+                                    : 'Plan pending'),
+                              ),
+                            );
+                          },
+                          // Displays plan details
+                          child: TravelPlanCard(
+                            plan: plan,
+                            onEdit: () => _showPlanDialog(existingPlan: plan),
+                            onDelete: () {
+                              setState(() {
+                                plans.removeWhere((p) => p.id == plan.id);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Plan deleted')),
+                              );
+                            },
+                            onToggleComplete: () {
+                              setState(() {
+                                plan.completed = !plan.completed;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(plan.completed
+                                      ? 'Plan completed'
+                                      : 'Plan pending'),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -392,6 +423,7 @@ class _TravelPlannerState extends State<TravelPlanner> {
         ],
       ),
       // Button to create new plan
+      // User can create new plan via button or by dragging (earlier code)
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () => _showPlanDialog(),
