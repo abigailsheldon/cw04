@@ -206,7 +206,7 @@ class _TravelPlannerState extends State<TravelPlanner> {
               ),
               actions: [
                 // Button to cancel
-                // CLoses without making changes
+                // Closes without making changes
                 TextButton(
                   child: Text('Cancel'),
                   onPressed: () {
