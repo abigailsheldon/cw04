@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -57,9 +59,9 @@ class TravelPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // Long press to edit plan
+      // Long press allows user to edit plan
       onLongPress: onEdit,
-      // Double-tap to delete plan
+      // Double-click allows user to delete plan
       onDoubleTap: onDelete,
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
