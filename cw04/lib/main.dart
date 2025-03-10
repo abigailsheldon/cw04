@@ -255,6 +255,41 @@ class _TravelPlannerState extends State<TravelPlanner> {
   }
 
   /*
+  * Template to create a new plan.
+  * Template is draggable.
+  */
+  Widget _buildDraggableTemplate() {
+    // Makes template draggable, carries info about new plan
+    return Draggable<Plan>(
+      // Plan object, attached as draggable data
+      data: Plan(
+        id: DateTime.now().toString(),
+        name: 'New Plan',
+        description: 'Plan descrip.',
+        date: DateTime.now(),
+      ),
+      feedback: Material(
+        child: Container(
+          padding: EdgeInsets.all(8),
+          color: Colors.blueAccent,
+          child: Text('New Plan'),
+        ),
+      ),
+      childWhenDragging: Container(
+        padding: EdgeInsets.all(8),
+        color: Colors.grey,
+        child: Text('Drag to add plan'),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(8),
+        color: Colors.blue,
+        child: Text('Drag to add plan'),
+      ),
+    );
+  }
+
+
+  /*
   * Main build method
   */
   @override
